@@ -3,48 +3,35 @@
 on:
   push:
     branches:
-      - main  # Trigger deployment on push to the main branch
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    env:
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      SERVER_IP: ${{ secrets.SERVER_IP }}
-      SERVER_USER: ${{ secrets.SERVER_USER }}
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ env.DOCKER_USERNAME }}
-        password: ${{ env.DOCKER_PASSWORD }}
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v2
 
-    - name: Build and push Docker image
-      run: |
-        docker build -t ${{ env.DOCKER_USERNAME }}/express-app:latest .
-        docker push ${{ env.DOCKER_USERNAME }}/express-app:latest
+    - name: Build Docker image
+      run: docker build -t express-app .
 
-    - name: Deploy to DigitalOcean
+    - name: Save Docker image as tar
+      run: docker save express-app -o express-app.tar
+
+    - name: Copy image to Droplet
       run: |
-        echo "$SSH_PRIVATE_KEY" > private_key.pem
-        chmod 600 private_key.pem
-        mkdir -p ~/.ssh
-        ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
-        ssh -i private_key.pem $SERVER_USER@$SERVER_IP << EOF
-          docker pull ${{ env.DOCKER_USERNAME }}/express-app:latest
-          docker stop express-app || true
-          docker rm express-app || true
-          docker run -d --name express-app -p 3000:3000 ${{ env.DOCKER_USERNAME }}/express-app:latest
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
+        chmod 600 key.pem
+        scp -o StrictHostKeyChecking=no -i key.pem express-app.tar root@${{ secrets.SERVER_IP }}:/root/
+
+    - name: Load & run on Droplet
+      run: |
+        ssh -o StrictHostKeyChecking=no -i key.pem root@${{ secrets.SERVER_IP }} << 'EOF'
+          docker load -i express-app.tar
+          docker stop express-app || true && docker rm express-app || true
+          docker run -d --name express-app -p 3000:3000 express-app
         EOF
-
-    - name: Debug GitHub Context
-      if: ${{ github.event_name == 'push' }}
-      env:
-        GITHUB_CONTEXT: ${{ toJSON(github) }}
-      run: echo "$GITHUB_CONTEXT"
