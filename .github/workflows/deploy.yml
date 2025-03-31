@@ -20,7 +20,6 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-          npm run build
 
   deploy:
     needs: build
@@ -31,12 +30,12 @@ jobs:
           SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
         run:
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/oceanKey
+          echo "${SSH_PRIVATE_KEY}" > ~/.ssh/oceanKey
           chmod 600 ~/.ssh/oceanKey
           ssh-keyscan -H ${{secrets.SERVER_IP}} >> ~/.ssh/known_hosts
 
           ssh ${{secrets.SERVER_USER}}@${{secrets.SERVER_IP}} << 'EOF'
-            cd /www/my-app/ISTE422_EX06 || git clone https://github.com/ColinChomas/ISTE422_EX06.git /www/my-app
+            cd /www/my-app/ISTE422_EX06 || git clone https://github.com/ColinChomas/ISTE422_EX06.git /root/www/my-app
             cd /www/my-app/ISTE422_EX06
             git pull origin main
             npm install
