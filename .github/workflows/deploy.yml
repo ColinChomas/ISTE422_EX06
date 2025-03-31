@@ -6,32 +6,41 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-
+  build:
+    runs-on: ubunto-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up Docker
-      uses: docker/setup-buildx-action@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-    - name: Build Docker image
-      run: docker build -t express-app .
+      - name: Install dependencies
+        run: |
+          npm install
+          npm run build
 
-    - name: Save Docker image as tar
-      run: docker save express-app -o express-app.tar
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to DigitalOcean
+        env:
+          SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
+        run:
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{secrets.SERVER_IP}} >> ~/.ssh/known_hosts
 
-    - name: Copy image to Droplet
-      run: |
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
-        chmod 600 key.pem
-        scp -o StrictHostKeyChecking=no -i key.pem express-app.tar root@${{ secrets.SERVER_IP }}:/root/
+          ssh ${{secrets.SERVER_USER}}@${{secrets.SERVER_IP}} << 'EOF'
+            cd /www/my-app || git clone https://github.com/ColinChomas/ISTE422_EX06.git /www/my-app
+            cd /www/my-app
+            git pull origin main
+            npm install
+            pm2 start index.js --name my-app || pm2 restart my-app
+          EOF
 
-    - name: Load & run on Droplet
-      run: |
-        ssh -o StrictHostKeyChecking=no -i key.pem root@${{ secrets.SERVER_IP }} << 'EOF'
-          docker load -i express-app.tar
-          docker stop express-app || true && docker rm express-app || true
-          docker run -d --name express-app -p 3000:3000 express-app
-        EOF
+        
