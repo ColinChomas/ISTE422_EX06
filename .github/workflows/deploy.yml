@@ -42,6 +42,8 @@ jobs:
             echo "SSH_PRIVATE_KEY is set (value hidden for security)."
           fi
 
+          cat ~/.ssh/authorized_keys || echo "No authorized keys found."
+
           # Create .ssh directory and set proper permissions
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
