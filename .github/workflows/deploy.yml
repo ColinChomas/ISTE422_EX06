@@ -31,10 +31,10 @@ jobs:
         run:
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          touch ~/.ssh/oceanKey
-          echo "${SSH_PRIVATE_KEY}" > ~/.ssh/oceanKey
+          echo "${SSH_PRIVATE_KEY}" | tee ~/.ssh/oceanKey > /dev/null || exit 1
           chmod 600 ~/.ssh/oceanKey
           ls -la ~/.ssh
+        
 
           if [ -z "${{secrets.SSH_PRIVATE_KEY}}" ]; then
           echo "SSH_PRIVATE_KEY is not set. Exiting."
