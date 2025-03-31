@@ -36,8 +36,8 @@ jobs:
           ssh-keyscan -H ${{secrets.SERVER_IP}} >> ~/.ssh/known_hosts
 
           ssh ${{secrets.SERVER_USER}}@${{secrets.SERVER_IP}} << 'EOF'
-            cd /www/my-app || git clone https://github.com/ColinChomas/ISTE422_EX06.git /www/my-app
-            cd /www/my-app
+            cd /www/my-app/ISTE422_EX06 || git clone https://github.com/ColinChomas/ISTE422_EX06.git /www/my-app
+            cd /www/my-app/ISTE422_EX06
             git pull origin main
             npm install
             pm2 start index.js --name my-app || pm2 restart my-app
