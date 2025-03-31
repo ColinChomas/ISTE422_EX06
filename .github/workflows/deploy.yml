@@ -9,14 +9,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout code
       - name: Checkout code
         uses: actions/checkout@v2
 
+      # Step 2: Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
+      # Step 3: Install dependencies
       - name: Install dependencies
         run: |
           npm install
@@ -27,28 +30,45 @@ jobs:
     steps:
       - name: Deploy to DigitalOcean
         env:
-          SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
-        run:
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          echo "${SSH_PRIVATE_KEY}" | tee ~/.ssh/oceanKey > /dev/null || exit 1
-          chmod 600 ~/.ssh/oceanKey
-          ls -la ~/.ssh
-        
-
-          if [ -z "${{secrets.SSH_PRIVATE_KEY}}" ]; then
-          echo "SSH_PRIVATE_KEY is not set. Exiting."
-          exit 1
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          # Check if SSH_PRIVATE_KEY is set
+          if [ -z "${SSH_PRIVATE_KEY}" ]; then
+            echo "Error: SSH_PRIVATE_KEY is not set. Exiting."
+            exit 1
+          else
+            echo "SSH_PRIVATE_KEY is set (value hidden for security)."
           fi
 
-          ssh-keyscan -H ${{secrets.SERVER_IP}} >> ~/.ssh/known_hosts
+          # Create .ssh directory and set proper permissions
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
 
-          ssh -i ~/.ssh/oceanKey ${{secrets.SERVER_USER}}@${{secrets.SERVER_IP}} << 'EOF'
-            cd /www/my-app/ISTE422_EX06 || git clone https://github.com/ColinChomas/ISTE422_EX06.git /root/www/my-app/
+          # Write SSH private key to file and secure it
+          echo "${SSH_PRIVATE_KEY}" | tee ~/.ssh/oceanKey > /dev/null
+          chmod 600 ~/.ssh/oceanKey
+          
+          # Debug to confirm file creation and permissions
+          ls -la ~/.ssh
+
+          # Add server to known_hosts
+          ssh-keyscan -H "${SERVER_IP}" >> ~/.ssh/known_hosts
+
+          # SSH into the server and deploy the application
+          ssh -i ~/.ssh/oceanKey "${SERVER_USER}"@"${SERVER_IP}" << 'EOF'
+            set -e  # Exit immediately if a command fails
+
+            # Ensure the project directory exists
+            mkdir -p /www/my-app/ISTE422_EX06
+            cd /www/my-app/ISTE422_EX06 || git clone https://github.com/ColinChomas/ISTE422_EX06.git /www/my-app/ISTE422_EX06
+            
+            # Pull the latest changes from the repository
             cd /www/my-app/ISTE422_EX06
             git pull origin main
+            
+            # Install dependencies and start/restart the app
             npm install
             pm2 start index.js --name my-app || pm2 restart my-app
           EOF
-
-        
