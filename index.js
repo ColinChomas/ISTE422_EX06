@@ -6,6 +6,6 @@ app.get('/', (req, res) => {
     res.send('Hallo Welt!!');
     });
 
-app.listen(port, '159.65.35.97', () => {
-    console.log(`Server listening at http://159.65.35.97:${port}`);
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server listening at http://0.0.0.0:${port}`);
 });
