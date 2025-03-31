@@ -31,8 +31,10 @@ jobs:
         run:
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
+          touch ~/.ssh/oceanKey
           echo "${SSH_PRIVATE_KEY}" > ~/.ssh/oceanKey
           chmod 600 ~/.ssh/oceanKey
+          ls -la ~/.ssh
 
           ssh-keyscan -H ${{secrets.SERVER_IP}} >> ~/.ssh/known_hosts
 
