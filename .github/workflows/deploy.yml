@@ -64,13 +64,15 @@ jobs:
             set -e  # Exit immediately if a command fails
 
             # Ensure the project directory exists
-            mkdir -p /www/my-app/ISTE422_EX06
-            cd /www/my-app/ISTE422_EX06 || git clone https://github.com/ColinChomas/ISTE422_EX06.git /www/my-app/ISTE422_EX06
-            
-            # Pull the latest changes from the repository
+            if [ ! -d "/www/my-app/ISTE422_EX06" ]; then
+              git clone https://github.com/ColinChomas/ISTE422_EX06.git /www/my-app/ISTE422_EX06
+            fi
+
             cd /www/my-app/ISTE422_EX06
+
+            # Pull the latest changes from the repository
             git pull origin main
-            
+
             # Install dependencies and start/restart the app
             npm install
             pm2 start index.js --name my-app || pm2 restart my-app
