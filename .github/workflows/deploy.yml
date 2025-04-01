@@ -42,16 +42,17 @@ jobs:
             echo "SSH_PRIVATE_KEY is set (value hidden for security)."
           fi
 
-          cat ~/.ssh/authorized_keys || echo "No authorized keys found."
+          # Debug: Print SSH key to confirm it's being set (remove or comment out in production)
+          echo "${SSH_PRIVATE_KEY}" | tr -d '\n' | head -c 10 && echo "..."
 
           # Create .ssh directory and set proper permissions
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
           # Write SSH private key to file and secure it
-          echo "${SSH_PRIVATE_KEY}" | tee ~/.ssh/oceanKey > /dev/null
+          echo "${SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/oceanKey
           chmod 600 ~/.ssh/oceanKey
-          
+
           # Debug to confirm file creation and permissions
           ls -la ~/.ssh
 
