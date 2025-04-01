@@ -68,7 +68,7 @@ jobs:
               git clone https://github.com/ColinChomas/ISTE422_EX06.git /www/my-app/ISTE422_EX06
             fi
 
-            cd /www/my-app/ISTE422_EX06
+            cd ~/www/my-app/ISTE422_EX06
 
             # Pull the latest changes from the repository
             git pull origin main
